@@ -1,0 +1,347 @@
+openapi: 3.0.3
+info:
+  title: Local HRM API
+  version: 0.1.0
+servers:
+  - url: http://localhost:5050
+  - url: http://localhost:5000
+paths:
+  /api/v1/users/login:
+    post:
+      summary: Login and receive JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Logged in
+  /api/v1/users/register:
+    post:
+      summary: Create user (ADMIN/HR only)
+      responses:
+        '201': { description: Created }
+  /api/v1/employees:
+    get:
+      summary: List employees (filters, pagination)
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: departmentId
+          schema:
+            type: string
+        - in: query
+          name: positionId
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: user.lastName:asc
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create employee
+      responses:
+        '201':
+          description: Created
+  /api/v1/employees/{id}:
+    get:
+      summary: Get employee by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /api/v1/time/attendance:
+    get:
+      summary: List my attendance
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Mark attendance
+      responses:
+        '201':
+          description: Created
+    delete:
+      summary: Clear all attendance for a user/employee
+      parameters:
+        - in: query
+          name: employeeId
+          schema: { type: string }
+        - in: query
+          name: userId
+          schema: { type: string }
+      responses:
+        '204': { description: Cleared }
+  /api/v1/time/history:
+    get:
+      summary: Employment history events for current user
+      responses:
+        '200':
+          description: OK
+  /api/v1/time/entries:
+    get:
+      summary: List time entries (by userId or employeeId)
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create time entry; also marks attendance PRESENT for that day
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date: { type: string, format: date-time }
+                startTime: { type: string, format: date-time }
+                endTime: { type: string, format: date-time }
+                employeeId: { type: string }
+                userId: { type: string }
+      responses:
+        '201': { description: Created }
+  /api/v1/time/leave:
+    get:
+      summary: List leave requests (self or target by employeeId)
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Request leave (creates Sick days as pending)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startDate, endDate]
+              properties:
+                startDate: { type: string, format: date-time }
+                endDate: { type: string, format: date-time }
+                reason: { type: string }
+      responses:
+        '201': { description: Created }
+  /api/v1/time/leave/{id}/approve:
+    post:
+      summary: Approve leave request (ADMIN/HR)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Approved }
+  /api/v1/documents:
+    get:
+      summary: List documents
+      responses:
+        '200':
+          description: OK
+  /api/v1/documents/{id}:
+    delete:
+      summary: Delete a document
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Deleted }
+
+  /api/v1/recruitment/vacancies:
+    get:
+      summary: List vacancies
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create vacancy
+      responses:
+        '201': { description: Created }
+  /api/v1/recruitment/vacancies/{id}:
+    get:
+      summary: Vacancy details
+      description: For ADMIN/HR returns vacancy and ranked candidates; for CANDIDATE returns vacancy only
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: Update vacancy
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Updated }
+    delete:
+      summary: Delete vacancy
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+        - in: query
+          name: force
+          schema: { type: boolean }
+          description: Cascade delete related candidates/interviews
+      responses:
+        '204': { description: Deleted }
+        '409': { description: Conflict (has related objects) }
+  /api/v1/recruitment/vacancies/{id}/apply:
+    post:
+      summary: Apply to vacancy (CANDIDATE)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+                firstName: { type: string }
+                lastName: { type: string }
+                coverLetter: { type: string }
+                resume:
+                  type: string
+                  format: binary
+      responses:
+        '200': { description: Updated existing application }
+        '201': { description: Created }
+  /api/v1/recruitment/candidates:
+    get:
+      summary: List candidates
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create candidate
+      responses:
+        '201': { description: Created }
+  /api/v1/recruitment/interviews:
+  /api/v1/recruitment/vacancies/{id}:
+    get:
+      summary: Vacancy details with ranked candidates
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': { description: OK }
+    get:
+      summary: List interviews
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Schedule interview
+      responses:
+        '201': { description: Created }
+
+  /api/v1/learning/courses:
+    get:
+      summary: List courses
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create course
+      responses:
+        '201': { description: Created }
+  /api/v1/learning/enrollments/my:
+    get:
+      summary: List my enrollments
+      responses:
+        '200': { description: OK }
+  /api/v1/learning/enrollments:
+    post:
+      summary: Create enrollment (self)
+      responses:
+        '201': { description: Created }
+  /api/v1/learning/certifications/my:
+    get:
+      summary: List my certifications
+      responses:
+        '200': { description: OK }
+
+  /api/v1/analytics/summary:
+    get:
+      summary: HR dashboard summary (employees, open vacancies, pending reviews today, leave today)
+      responses:
+        '200': { description: OK }
+
+  # Performance 360
+  /api/v1/performance/360/questions:
+    get:
+      summary: Get active 360 feedback cycle and questions
+      responses:
+        '200': { description: OK }
+  /api/v1/performance/360/responses:
+    post:
+      summary: Submit 360 feedback responses (SELF/PEER/MANAGER)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cycleId, targetEmployeeId, reviewerRole, answers]
+              properties:
+                cycleId: { type: string }
+                targetEmployeeId: { type: string }
+                reviewerRole: { type: string, enum: [SELF, PEER, MANAGER] }
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      questionId: { type: string }
+                      rating: { type: integer }
+                      comment: { type: string }
+      responses:
+        '201': { description: Created }
+  /api/v1/performance/360/aggregates:
+    get:
+      summary: Get aggregated 360 results
+      parameters:
+        - in: query
+          name: cycleId
+          schema: { type: string }
+        - in: query
+          name: targetEmployeeId
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+
